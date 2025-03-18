@@ -8,11 +8,15 @@ const pool = new Pool({
 export default async function handler(req, res) {
   const { matchId } = req.query;
 
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    // Fetch pools
+    // Check existing pools
     let { rows: pools } = await pool.query('SELECT * FROM pools WHERE match_id = $1', [matchId]);
 
-    // If no pools, create defaults (2, 4, 6, 8, 10)
+    // If none, create default pools (2, 4, 6, 8, 10)
     if (pools.length === 0) {
       const defaultSizes = [2, 4, 6, 8, 10];
       for (const size of defaultSizes) {
@@ -21,7 +25,6 @@ export default async function handler(req, res) {
           [matchId, size, 'open', 0]
         );
       }
-      // Fetch newly created pools
       const { rows: newPools } = await pool.query('SELECT * FROM pools WHERE match_id = $1', [matchId]);
       pools = newPools;
     }
@@ -29,6 +32,6 @@ export default async function handler(req, res) {
     res.status(200).json(pools);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to fetch pools' });
+    res.status(500).json({ error: 'Failed to fetch or create pools' });
   }
 }

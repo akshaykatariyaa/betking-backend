@@ -1,22 +1,17 @@
-import { Pool } from 'pg';
+const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
+  console.log('Pools endpoint hit with:', req.query); // Debug log
   const { matchId } = req.query;
 
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
-    // Check existing pools
     let { rows: pools } = await pool.query('SELECT * FROM pools WHERE match_id = $1', [matchId]);
 
-    // If none, create default pools (2, 4, 6, 8, 10)
     if (pools.length === 0) {
       const defaultSizes = [2, 4, 6, 8, 10];
       for (const size of defaultSizes) {
@@ -31,7 +26,7 @@ export default async function handler(req, res) {
 
     res.status(200).json(pools);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch or create pools' });
+    console.error('Error in pools:', err);
+    res.status(500).json({ error: 'Failed to fetch pools' });
   }
-}
+};

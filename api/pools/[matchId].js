@@ -6,7 +6,7 @@ const pool = new Pool({
 });
 
 module.exports = async (req, res) => {
-  console.log('Pools endpoint hit with:', req.query); // Debug log
+  console.log('Pools endpoint hit with:', req.query);
   const { matchId } = req.query;
 
   try {
@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
 
     res.status(200).json(pools);
   } catch (err) {
-    console.error('Error in pools:', err);
-    res.status(500).json({ error: 'Failed to fetch pools' });
+    console.error('Error in pools:', err.message);
+    res.status(500).json({ error: 'Failed to fetch pools', details: err.message });
   }
 };

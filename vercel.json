@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "api/**/*.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      { "src": "/api/matches", "dest": "/api/matches.js" },
+      { "src": "/api/pools/(.*)", "dest": "/api/pools.js" },
+      { "src": "/api/bet", "dest": "/api/bet.js" },
+      { "src": "/api/user/(.*)", "dest": "/api/user.js" }
+    ]
+  }

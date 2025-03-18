@@ -6,8 +6,13 @@ const pool = new Pool({
 });
 
 module.exports = async (req, res) => {
-  console.log('Pools endpoint hit with:', req.query);
+  console.log('Request query:', req.query); // Debug full query
   const { matchId } = req.query;
+  console.log('Extracted matchId:', matchId); // Confirm matchId
+
+  if (!matchId) {
+    return res.status(400).json({ error: 'matchId is required' });
+  }
 
   try {
     let { rows: pools } = await pool.query('SELECT * FROM pools WHERE match_id = $1', [matchId]);

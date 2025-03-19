@@ -4,7 +4,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejec
 module.exports = async (req, res) => {
   const { userId, matchId, poolId, team, amount } = req.body;
 
-  // Validate input
+  // Input validation
   if (!userId || !matchId || !poolId || !team || !amount || amount <= 0) {
     console.error('Invalid input:', req.body);
     return res.status(400).json({ error: 'Missing or invalid parameters' });
@@ -18,42 +18,36 @@ module.exports = async (req, res) => {
     await client.query('BEGIN');
     console.log('Transaction started');
 
-    // Fetch wallet balance
     const { rows: [wallet] } = await client.query('SELECT balance FROM wallets WHERE user_id = $1', [userId]);
     console.log('Wallet:', wallet);
     if (!wallet || wallet.balance < amount) {
       throw new Error('Insufficient balance');
     }
 
-    // Deduct amount from wallet
     await client.query('UPDATE wallets SET balance = balance - $1 WHERE user_id = $2', [amount, userId]);
     console.log('Wallet updated, deducted:', amount);
 
-    // Increment pool bets
     await client.query('UPDATE pools SET bets = bets + 1 WHERE id = $1', [poolId]);
     console.log('Pool bets incremented for pool:', poolId);
 
-    // Insert bet
     await client.query(
       'INSERT INTO bets (user_id, match_id, pool_id, team, amount) VALUES ($1, $2, $3, $4, $5)',
       [userId, matchId, poolId, team, amount]
     );
     console.log('Bet inserted');
 
-    // Fetch updated pool data
-    const { rows: [pool] } = await client.query('SELECT size, amount, bets FROM pools WHERE id = $1', [poolId]);
-    console.log('Pool data:', pool);
-    if (!pool) throw new Error('Pool not found');
+    const { rows: [poolData] } = await client.query('SELECT size, amount, bets FROM pools WHERE id = $1', [poolId]);
+    console.log('Pool data:', poolData);
+    if (!poolData) throw new Error('Pool not found');
 
-    // Check if pool is full
-    if (pool.bets === pool.size) { // Use updated bets value
+    if (poolData.bets === poolData.size) {
       const { rows: bets } = await client.query(
         'SELECT user_id FROM bets WHERE pool_id = $1 ORDER BY RANDOM() LIMIT 1',
         [poolId]
       );
       console.log('Random winner selected:', bets[0]);
       const winnerId = bets[0].user_id;
-      const prize = pool.amount * pool.size * 0.9;
+      const prize = poolData.amount * poolData.size * 0.9;
       console.log('Prize calculated:', prize);
 
       await client.query('UPDATE wallets SET balance = balance + $1 WHERE user_id = $2', [prize, winnerId]);

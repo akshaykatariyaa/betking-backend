@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     let { rows: pools } = await pool.query('SELECT * FROM pools WHERE match_id = $1 ORDER BY size, amount', [matchId]);
     if (pools.length === 0) {
       const sizes = [2, 4, 6, 8, 10];
-      const amounts = [200, 500, 1000, 2500, 5000, 9999];
+      const amounts = [200, 500, 1000, 2500, 5000];
       for (const size of sizes) {
         for (const amount of amounts) {
           await pool.query(

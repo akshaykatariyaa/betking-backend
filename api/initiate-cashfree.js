@@ -1,40 +1,48 @@
 const { Pool } = require('pg');
-const Stripe = require('stripe');
+const axios = require('axios');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-
-// Initialize Stripe with your secret key (store in environment variables)
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'your-secret-key-here');
 
 module.exports = async (req, res) => {
   const { userId, amount, email, firstname, phone } = req.body;
 
+  // Cashfree credentials (ensure these are set in Vercel env vars)
+  const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || 'your-app-id';
+  const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || 'your-secret-key';
+  const CASHFREE_API_URL = 'https://sandbox.cashfree.com/pg/orders'; // Sandbox URL
+
+  // Log credentials and request body for debugging
+  console.log('Cashfree App ID:', CASHFREE_APP_ID);
+  console.log('Cashfree Secret Key:', CASHFREE_SECRET_KEY);
+  console.log('Request Body:', req.body);
+
   try {
-    // Create a Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'], // Add 'upi' if you enable it in Stripe Dashboard
-      line_items: [
-        {
-          price_data: {
-            currency: 'inr',
-            product_data: {
-              name: 'PredictKing Deposit',
-              description: `Deposit for User ${userId}`,
-            },
-            unit_amount: Math.round(amount * 100), // Amount in paise (INR * 100)
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
+    const orderData = {
+      order_amount: Number(amount),
+      order_currency: 'INR',
+      order_note: `Deposit for PredictKing User ${userId}`,
+      customer_id: userId,
+      customer_name: firstname,
       customer_email: email,
-      metadata: { userId, firstname, phone },
-      success_url: 'https://cricket-backend-seven.vercel.app/api/stripe-success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'https://cricket-backend-seven.vercel.app/api/stripe-failure',
+      customer_phone: phone,
+      return_url: 'https://cricket-backend-seven.vercel.app/api/cashfree-success',
+      notify_url: 'https://cricket-backend-seven.vercel.app/api/cashfree-webhook',
+    };
+
+    const response = await axios.post(CASHFREE_API_URL, orderData, {
+      headers: {
+        'x-api-version': '2023-08-01', // Updated to latest version as of 2025 (check Cashfree docs)
+        'x-client-id': CASHFREE_APP_ID,
+        'x-client-secret': CASHFREE_SECRET_KEY,
+        'Content-Type': 'application/json',
+      },
     });
 
-    res.status(200).json({ url: session.url });
+    console.log('Cashfree Response:', response.data);
+    const paymentLink = response.data.payment_link;
+    if (!paymentLink) throw new Error('No payment link returned');
+    res.status(200).json({ url: paymentLink });
   } catch (error) {
-    console.error('Stripe initiation error:', error.message);
-    res.status(500).json({ error: 'Failed to initiate Stripe payment', details: error.message });
+    console.error('Cashfree initiation error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to initiate Cashfree payment', details: error.response?.data || error.message });
   }
 };

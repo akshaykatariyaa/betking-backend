@@ -1,24 +1,27 @@
 const { Pool } = require('pg');
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
 module.exports = async (req, res) => {
-  const userId = req.query.userId;
+  const userId = req.url.split('/').pop();
+
   try {
-    const bets = await pool.query(
-      'SELECT b.*, m.name, p.size FROM bets b JOIN pools p ON b.pool_id = p.id JOIN matches m ON p.match_id = m.id WHERE b.user_id = $1',
-      [userId]
-    );
-    const payouts = await pool.query(
-      'SELECT p.*, m.name FROM payouts p JOIN pools po ON p.pool_id = po.id JOIN matches m ON po.match_id = m.id WHERE p.user_id = $1',
-      [userId]
-    );
-    res.status(200).json({ bets: bets.rows, winnings: 0 }); // Update with real logic later
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Failed to fetch user data' });
+    const { rows: bets } = await pool.query(`
+      SELECT b.id, b.match_id, b.pool_id, b.team, b.amount, m.name, p.size as pool_size, p.status as pool_status
+      FROM bets b
+      JOIN matches m ON b.match_id = m.id
+      JOIN pools p ON b.pool_id = p.id
+      WHERE b.user_id = $1
+    `, [userId]);
+
+    // Mock status for now (replace with real logic later)
+    const predictions = bets.map(bet => ({
+      ...bet,
+      status: bet.pool_status === 'closed' ? (Math.random() > 0.5 ? 'won' : 'lost') : 'pending'
+    }));
+
+    res.status(200).json({ bets: predictions });
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch user data', details: err.message });
   }
 };

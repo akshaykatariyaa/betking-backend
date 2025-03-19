@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
 
     if (!wallet) {
       console.log('No wallet found for user:', userId);
-      throw new Error('Insufficient balance'); // Treat as insufficient for now
+      throw new Error('Insufficient balance');
     }
     if (wallet.balance < amount) {
       console.log('Insufficient funds:', { balance: wallet.balance, required: amount });
@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
     console.error('Bet transaction error:', err.message, err.stack);
     if (client) await client.query('ROLLBACK');
     if (err.message === 'Insufficient balance') {
-      return res.status(400).json({ error: 'Insufficient balance', redirect: '/payment' });
+      return res.status(400).json({ error: 'Insufficient balance', redirect: 'PaymentScreen' }); // Changed to 'PaymentScreen'
     }
     res.status(500).json({ error: 'Failed to place prediction', details: err.message });
   } finally {

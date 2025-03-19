@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
       'SELECT p.*, m.name FROM payouts p JOIN pools po ON p.pool_id = po.id JOIN matches m ON po.match_id = m.id WHERE p.user_id = $1',
       [userId]
     );
-    res.json({ bets: bets.rows, payouts: payouts.rows });
+    res.status(200).json({ bets: bets.rows, winnings: 0 }); // Update with real logic later
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'Failed to fetch user data' });

@@ -38,7 +38,8 @@ module.exports = async (req, res) => {
   console.log('Order data sent to Cashfree:', orderData);
 
   try {
-    const response = await axios.post(CASHFREE_API_URL, orderData, {
+    // Step 1: Create the order
+    const orderResponse = await axios.post(CASHFREE_API_URL, orderData, {
       headers: {
         'x-api-version': '2023-08-01',
         'x-client-id': CASHFREE_APP_ID,
@@ -47,11 +48,26 @@ module.exports = async (req, res) => {
       },
     });
 
-    console.log('Cashfree Response:', response.data);
-    if (!response.data.payment_session_id) {
+    console.log('Cashfree Order Response:', orderResponse.data);
+
+    if (!orderResponse.data.payment_session_id) {
       throw new Error('No payment_session_id returned from Cashfree');
     }
-    const paymentUrl = `https://sandbox.cashfree.com/pg/hosted/session/${response.data.payment_session_id}`;
+
+    // Step 2: Get the payment link using the order ID
+    const orderId = orderResponse.data.order_id;
+    const paymentLinkResponse = await axios.get(`${CASHFREE_API_URL}/${orderId}/payments`, {
+      headers: {
+        'x-api-version': '2023-08-01',
+        'x-client-id': CASHFREE_APP_ID,
+        'x-client-secret': CASHFREE_SECRET_KEY,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('Cashfree Payment Link Response:', paymentLinkResponse.data);
+
+    const paymentUrl = paymentLinkResponse.data.payment_link || `https://sandbox.cashfree.com/pg/session/${orderResponse.data.payment_session_id}`;
     console.log('Generated payment URL:', paymentUrl);
     res.status(200).json({ url: paymentUrl });
   } catch (error) {

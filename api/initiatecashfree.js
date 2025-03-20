@@ -48,7 +48,12 @@ module.exports = async (req, res) => {
     });
 
     console.log('Cashfree Response:', response.data);
-    res.status(200).json({ url: response.data.payment_link });
+    if (!response.data.payment_session_id) {
+      throw new Error('No payment_session_id returned from Cashfree');
+    }
+    // Construct the payment URL using payment_session_id
+    const paymentUrl = `https://sandbox.cashfree.com/pg/hosted/session/${response.data.payment_session_id}`;
+    res.status(200).json({ url: paymentUrl });
   } catch (error) {
     console.error('Cashfree Error:', error.response?.data || error.message);
     res.status(500).json({ error: 'Cashfree initiation failed', details: error.response?.data || error.message });

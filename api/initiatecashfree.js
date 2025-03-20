@@ -2,6 +2,9 @@ const axios = require('axios');
 
 module.exports = async (req, res) => {
   const { userId, amount, email, firstname, phone } = req.body;
+  console.log('Incoming request body:', req.body); // Log the full body
+  console.log('Extracted userId:', userId); // Log the userId specifically
+
   const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID;
   const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
   const CASHFREE_API_URL = 'https://sandbox.cashfree.com/pg/orders';
@@ -29,6 +32,8 @@ module.exports = async (req, res) => {
     return_url: 'https://cricket-backend-seven.vercel.app/api/cashfree-success',
     notify_url: 'https://cricket-backend-seven.vercel.app/api/cashfree-webhook',
   };
+
+  console.log('Order data sent to Cashfree:', orderData); // Log what’s sent to Cashfree
 
   try {
     const response = await axios.post(CASHFREE_API_URL, orderData, {

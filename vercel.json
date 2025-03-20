@@ -1,15 +1,19 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "api/**/*.js",
-        "use": "@vercel/node"
-      }
-    ],
-    "routes": [
-      { "src": "/api/matches", "dest": "/api/matches.js" },
-      { "src": "/api/pools/(.*)", "dest": "/api/pools/[matchId].js" },
-      { "src": "/api/bet", "dest": "/api/bet.js" },
-      { "src": "/api/user/(.*)", "dest": "/api/user.js" }
-    ]
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/matches", "dest": "/api/matches.js" },
+    { "src": "/api/pools/(.*)", "dest": "/api/pools/[matchId].js" },
+    { "src": "/api/bet", "dest": "/api/bet.js" },
+    { "src": "/api/user/(.*)", "dest": "/api/user.js" },
+    { "src": "/api/initiatecashfree", "dest": "/api/initiatecashfree.js" },
+    { "src": "/api/cashfree-webhook", "dest": "/api/cashfree-webhook.js" },
+    { "src": "/api/cashfree-success", "dest": "/api/cashfree-success.js" },
+    { "src": "/api/cashfree-failure", "dest": "/api/cashfree-failure.js" }
+  ]
+}
